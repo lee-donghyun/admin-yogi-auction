@@ -1,11 +1,20 @@
-import React from "react";
+import { Route, Routes } from "react-router-dom";
+import Auth from "./components/Auth";
+import Layout from "./components/Layout";
+import SignIn from "./pages/auth/signin";
 
 function App() {
   return (
-    <div>
-      <h1>yogi auction admin</h1>
-      <p>this is initial commit</p>
-    </div>
+    <Auth whiteList={["/auth/signin"]}>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/item/register" element={<h1>register page</h1>} />
+          <Route path="/item/manage" element={<h1>manage page</h1>} />
+          <Route path="/auth/signin" element={<SignIn />} />
+          <Route index element={<></>} />
+        </Route>
+      </Routes>
+    </Auth>
   );
 }
 
