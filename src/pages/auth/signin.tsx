@@ -1,7 +1,10 @@
 import { Form, Input, Checkbox, Button } from "antd";
 import { FC } from "react";
+import { useRecoilState } from "recoil";
+import { authState } from "../../store";
 
 const SignIn: FC = () => {
+  const [isAuthorized, setIsAuthorized] = useRecoilState(authState);
   return (
     <>
       <Form
@@ -9,8 +12,17 @@ const SignIn: FC = () => {
         labelCol={{ span: 3 }}
         wrapperCol={{ span: 6 }}
         initialValues={{ remember: true }}
-        // onFinish={onFinish}
-        // onFinishFailed={onFinishFailed}
+        onFinish={(values) => {
+          if (Math.random() > 0.3) {
+            throw new Error("sign in failed");
+          }
+          console.log(values);
+
+          setIsAuthorized(true);
+        }}
+        onFinishFailed={() => {
+          console.log("failed");
+        }}
         autoComplete="off"
       >
         <Form.Item
