@@ -25,13 +25,15 @@ const app = initializeApp({
 
 const db = getFirestore(app);
 
-export const getItems = async (key: {
-  page: number;
-  search: { type: "id" | "name"; query: string };
-}) => {
+export const getItems = async (
+  key: Partial<{
+    search: Partial<{ type: "id" | "name"; query: string }>;
+  }>
+) => {
   const itemsRef = collection(db, "items") as CollectionReference<Item.Item>;
   const queries = [];
-  key.search.query &&
+  key?.search?.query &&
+    key?.search?.type &&
     queries.push(where(key.search.type, "==", key.search.query));
   const q = query<Item.Item>(itemsRef, ...queries);
   const itemsSnap = await getDocs(q);

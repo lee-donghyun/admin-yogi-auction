@@ -8,16 +8,23 @@ import {
   Table,
   Image,
   Popover,
+  message,
 } from "antd";
 import { ColumnsType } from "antd/lib/table";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import useSWR from "swr";
 import { getItems } from "../../services/api/firebase";
 
 const Manage: FC = () => {
   const [form] = Form.useForm();
-  const [payload, setPayload] = useState();
-  const { data } = useSWR(payload, getItems);
+  const [payload, setPayload] = useState({});
+  const { data, error } = useSWR(payload, getItems);
+
+  useEffect(() => {
+    if (error) {
+      message.error("데이터 로딩에 실패했습니다.");
+    }
+  }, [error]);
 
   return (
     <>
@@ -60,7 +67,11 @@ const Manage: FC = () => {
                 style={{ display: "flex", justifyContent: "center", gap: 8 }}
               >
                 <Button onClick={() => form.resetFields()}>초기화</Button>
-                <Button type="primary" htmlType="submit" loading={!data}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={!data && !error}
+                >
                   검색
                 </Button>
               </Col>
@@ -75,7 +86,7 @@ const Manage: FC = () => {
             rowKey={(row) => row.id}
             dataSource={data}
             columns={columns}
-            loading={!data}
+            loading={!data && !error}
           />
         </Col>
       </Row>
