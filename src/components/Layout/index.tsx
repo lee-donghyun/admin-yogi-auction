@@ -12,7 +12,9 @@ const Layout: FC = () => {
 
   return (
     <AntdLayout style={{ minHeight: "100vh" }}>
-      <AntdLayout.Header className="header">
+      <AntdLayout.Header
+        style={{ position: "fixed", zIndex: 1, width: "100%" }}
+      >
         <div style={{ float: "left" }}>
           <h1 style={{ color: "white", paddingRight: 50 }}>Y-A ADMIN</h1>
         </div>
@@ -28,7 +30,18 @@ const Layout: FC = () => {
       </AntdLayout.Header>
       <AntdLayout>
         {menus.length > 0 && (
-          <AntdLayout.Sider width={200}>
+          <AntdLayout.Sider
+            width={200}
+            style={{
+              overflow: "auto",
+              height: "100vh",
+              position: "fixed",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              marginTop: 64,
+            }}
+          >
             <Menu
               mode="inline"
               style={{ height: "100%", borderRight: 0 }}
@@ -46,7 +59,8 @@ const Layout: FC = () => {
           <AntdLayout.Content
             style={{
               padding: 24,
-              margin: 0,
+              marginTop: 64,
+              marginLeft: 200,
               minHeight: 280,
               background: "white",
             }}

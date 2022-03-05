@@ -82,6 +82,7 @@ const Manage: FC = () => {
       <Row style={{ marginTop: 24 }}>
         <Col span={24}>
           <Table
+            sticky={{ offsetHeader: 64 }}
             rowSelection={{ type: "checkbox" }}
             rowKey={(row) => row.id}
             dataSource={data}
