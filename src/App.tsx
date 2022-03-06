@@ -10,9 +10,9 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<auth.SignIn />} />
-          <Route path="/item/register" element={<h1>register page</h1>} />
-          <Route path="/item/manage" element={<item.Manage />} />
           <Route path="/auth/signin" element={<auth.SignIn />} />
+          <Route path="/item/register" element={<item.Register />} />
+          <Route path="/item/manage" element={<item.Manage />} />
         </Route>
       </Routes>
     </Auth>

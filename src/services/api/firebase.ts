@@ -13,6 +13,7 @@ import {
   DocumentReference,
   CollectionReference,
   where,
+  orderBy,
 } from "firebase/firestore";
 
 const app = initializeApp({
@@ -32,32 +33,12 @@ export const getItems = async (
 ) => {
   const itemsRef = collection(db, "items") as CollectionReference<Item.Item>;
   const queries = [];
-  key?.search?.query &&
-    key?.search?.type &&
+  if (key?.search?.query && key?.search?.type) {
     queries.push(where(key.search.type, "==", key.search.query));
+  }
   const q = query<Item.Item>(itemsRef, ...queries);
   const itemsSnap = await getDocs(q);
   return itemsSnap.docs.map((doc) => doc.data());
-};
-
-export const getQueriedItems = async (key: {
-  bookmark: QueryDocumentSnapshot<DocumentData> | "INITIAL_REQUEST";
-  query?: string;
-}) => {
-  const itemsRef = collection(db, "items") as CollectionReference<Item.Item>;
-  const q =
-    key.bookmark === "INITIAL_REQUEST"
-      ? query<Item.Item>(itemsRef, where("name", "==", key.query))
-      : query<Item.Item>(
-          itemsRef,
-          startAfter(key.bookmark),
-          where("name", "==", key.query)
-        );
-  const itemsSnap = await getDocs(q);
-  return {
-    bookmark: itemsSnap.docs[itemsSnap.docs.length - 1],
-    data: itemsSnap.docs.map((doc) => doc.data()),
-  };
 };
 
 export const getItem = async (id: string): Promise<{ data: Item.Item }> => {
@@ -68,4 +49,26 @@ export const getItem = async (id: string): Promise<{ data: Item.Item }> => {
   } else {
     return { data: docSnap.data() };
   }
+};
+
+export const getRequestedItems = async (key: {
+  search?: Partial<{ type: "id" | "name"; query: string }>;
+  sort: "releasedAt" | "releasedAt,desc";
+}) => {
+  const itemsRef = collection(
+    db,
+    "requests"
+  ) as CollectionReference<Item.Requested>;
+
+  const queries = [];
+  if (key?.search?.query && key?.search?.type) {
+    queries.push(where(key.search.type, "==", key.search.query));
+  }
+  queries.push(
+    orderBy(...(key.sort.split(",") as [string] | [string | "desc"]))
+  );
+  const q = query<Item.Requested>(itemsRef, ...queries);
+
+  const itemsSnap = await getDocs(q);
+  return itemsSnap.docs.map((doc) => doc.data());
 };

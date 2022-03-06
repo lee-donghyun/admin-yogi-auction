@@ -60,7 +60,7 @@ const Layout: FC = () => {
             style={{
               padding: 24,
               marginTop: 64,
-              marginLeft: 200,
+              marginLeft: menus.length && 200,
               minHeight: 280,
               background: "white",
             }}

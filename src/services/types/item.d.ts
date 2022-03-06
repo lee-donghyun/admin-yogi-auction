@@ -34,4 +34,14 @@ namespace Item {
     name: string;
     description: string;
   };
+
+  type Requested = Item.Item & {
+    state: Item.RequestState;
+  };
+
+  enum RequestState {
+    "REJECTED" = "REJECTED",
+    "ACCEPTED" = "ACCEPTED",
+    "REQUESTED" = "REQUESTED",
+  }
 }

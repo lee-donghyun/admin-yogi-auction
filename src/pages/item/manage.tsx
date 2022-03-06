@@ -15,9 +15,13 @@ import { FC, useEffect, useState } from "react";
 import useSWR from "swr";
 import { getItems } from "../../services/api/firebase";
 
+const initialValues = {
+  search: { type: "name" },
+};
+
 const Manage: FC = () => {
   const [form] = Form.useForm();
-  const [payload, setPayload] = useState({});
+  const [payload, setPayload] = useState(initialValues);
   const { data, error } = useSWR(payload, getItems);
 
   useEffect(() => {
@@ -40,9 +44,7 @@ const Manage: FC = () => {
               borderRadius: "2px",
             }}
             onFinish={(form) => setPayload(form)}
-            initialValues={{
-              search: { type: "name" },
-            }}
+            initialValues={initialValues}
           >
             <Row>
               <Col span={24}>
