@@ -13,7 +13,9 @@ const Auth: FC<Props> = ({ children, whiteList }) => {
 
   useEffect(() => {
     const redirect =
-      location.pathname == "/" ? "/item/manage" : location.pathname;
+      location.pathname == "/" || whiteList.includes(location.pathname)
+        ? "/item/manage"
+        : location.pathname;
     const isWhiteList = whiteList.includes(location.pathname);
     if (!isAuthorized && !isWhiteList) {
       navigate(
