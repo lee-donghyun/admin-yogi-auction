@@ -1,66 +1,28 @@
 import {
   Form,
-  Input,
-  Button,
   Row,
   Col,
+  Input,
   Select,
-  Table,
-  Image,
-  Modal,
+  Button,
   message,
   Space,
   Tag,
   Popover,
+  Table,
+  Modal,
+  Image,
 } from "antd";
 import { ColumnsType } from "antd/lib/table";
-import { FC, useEffect, useState } from "react";
-import useSWR, { KeyedMutator } from "swr";
+import { FC, useMemo, useState } from "react";
+import { KeyedMutator } from "swr";
 import {
   acceptRegisterItem,
-  getRequestedItems,
   rejectRegisterItem,
-} from "../../services/api/firebase";
+} from "../../../services/api/firebase";
+import { initialValues, ModalState } from "./helper";
 
-const initialValues = {
-  search: { type: "name" },
-  sort: "releasedAt",
-};
-
-enum ModalState {
-  ACCEPT,
-  REJECT,
-  NONE,
-}
-
-const Register: FC = () => {
-  const [payload, setPayload] = useState(initialValues);
-  const { data, error, mutate } = useSWR(payload, getRequestedItems);
-
-  useEffect(() => {
-    if (error) {
-      message.error("데이터 로딩에 실패했습니다.");
-      console.error(error);
-    }
-  }, [error]);
-
-  return (
-    <>
-      <Row>
-        <Col span={24}>
-          <SearchForm setPayload={setPayload} data={data} error={error} />
-        </Col>
-      </Row>
-      <Row style={{ marginTop: 24 }}>
-        <Col span={24}>
-          <ItemTable data={data} error={error} mutate={mutate} />
-        </Col>
-      </Row>
-    </>
-  );
-};
-
-const SearchForm: FC<{
+export const SearchForm: FC<{
   setPayload: any;
   data?: Item.Requested[];
   error: any;
@@ -130,7 +92,7 @@ const SearchForm: FC<{
   );
 };
 
-const ItemTable: FC<{
+export const ItemTable: FC<{
   data?: Item.Requested[];
   error?: any;
   mutate: KeyedMutator<Item.Requested[]>;
@@ -142,97 +104,100 @@ const ItemTable: FC<{
     setTarget(null);
   };
 
-  const columns: ColumnsType<Item.Requested> = [
-    {
-      title: "이름",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "코드",
-      dataIndex: "id",
-      key: "id",
-      render: (id) => (
-        <Button
-          type="text"
-          onClick={() => {
-            navigator.clipboard
-              .writeText(id)
-              .then(() => message.info("코드가 복사되었습니다."));
-          }}
-        >
-          {id}
-        </Button>
-      ),
-    },
-    {
-      title: "사진",
-      dataIndex: "images",
-      key: "images",
-      render: ([src]) => (
-        <Image
-          src={src}
-          style={{ width: 100, height: 100, objectFit: "contain" }}
-        />
-      ),
-    },
-    {
-      title: "설명",
-      dataIndex: "description",
-      key: "description",
-      ellipsis: true,
-    },
-    {
-      title: "요청일",
-      dataIndex: "releasedAt",
-      key: "releasedAt",
-    },
-    {
-      title: "등록",
-      key: "register",
-      render: (_, target) => (
-        <Space direction="vertical">
-          {target.state !== "ACCEPTED" && (
-            <Button
-              onClick={() => {
-                setModal(ModalState.ACCEPT);
-                setTarget(target);
-              }}
-            >
-              승인
-            </Button>
-          )}
-          {target.state !== "REJECTED" && (
-            <Button
-              danger
-              onClick={() => {
-                setModal(ModalState.REJECT);
-                setTarget(target);
-              }}
-            >
-              반려
-            </Button>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: "상태",
-      key: "state",
-      dataIndex: "state",
-      render: (state, { rejectReason }) => (
-        <>
-          {state == "ACCEPTED" && <Tag color="success">승인</Tag>}
-          {state == "REJECTED" && (
-            <Popover content={rejectReason}>
-              <Tag color="error">반려</Tag>
-            </Popover>
-          )}
-          {state == "REQUESTED" && <Tag>승인 대기</Tag>}
-        </>
-      ),
-    },
-  ];
+  const columns: ColumnsType<Item.Requested> = useMemo(
+    () => [
+      {
+        title: "이름",
+        dataIndex: "name",
+        key: "name",
+      },
+      {
+        title: "코드",
+        dataIndex: "id",
+        key: "id",
+        render: (id) => (
+          <Button
+            type="text"
+            onClick={() => {
+              navigator.clipboard
+                .writeText(id)
+                .then(() => message.info("코드가 복사되었습니다."));
+            }}
+          >
+            {id}
+          </Button>
+        ),
+      },
+      {
+        title: "사진",
+        dataIndex: "images",
+        key: "images",
+        render: ([src]) => (
+          <Image
+            src={src}
+            style={{ width: 100, height: 100, objectFit: "contain" }}
+          />
+        ),
+      },
+      {
+        title: "설명",
+        dataIndex: "description",
+        key: "description",
+        ellipsis: true,
+      },
+      {
+        title: "요청일",
+        dataIndex: "releasedAt",
+        key: "releasedAt",
+      },
+      {
+        title: "등록",
+        key: "register",
+        render: (_, target) => (
+          <Space direction="vertical">
+            {target.state !== "ACCEPTED" && (
+              <Button
+                onClick={() => {
+                  setModal(ModalState.ACCEPT);
+                  setTarget(target);
+                }}
+              >
+                승인
+              </Button>
+            )}
+            {target.state !== "REJECTED" && (
+              <Button
+                danger
+                onClick={() => {
+                  setModal(ModalState.REJECT);
+                  setTarget(target);
+                }}
+              >
+                반려
+              </Button>
+            )}
+          </Space>
+        ),
+      },
+      {
+        title: "상태",
+        key: "state",
+        dataIndex: "state",
+        render: (state, { rejectReason }) => (
+          <>
+            {state == "ACCEPTED" && <Tag color="success">승인</Tag>}
+            {state == "REJECTED" && (
+              <Popover content={rejectReason}>
+                <Tag color="error">반려</Tag>
+              </Popover>
+            )}
+            {state == "REQUESTED" && <Tag>승인 대기</Tag>}
+          </>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <>
@@ -398,5 +363,3 @@ const RejectModal: FC<{
     </Modal>
   );
 };
-
-export default Register;
