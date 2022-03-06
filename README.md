@@ -1,5 +1,5 @@
 # Yogi-Auction 어드민  
-[요기옥션 어드민](https://admin-yogi-auction.vercel.app) 프로젝트입니다. 테스트 계정 (id: super, pw: yogiauction)
+[요기옥션 어드민](https://admin.yogi-auction.shop) 프로젝트입니다. 테스트 계정 (id: super, pw: yogiauction)
 
 ## 개요
 create-react-app과 ant design, firebase를 사용해 구현한 요기옥션 어드민입니다. 요기옥션에서 거래되고 있는 모든 상품을 관리합니다. 사용자의 상품 등록 요청을 검수합니다.  
@@ -18,7 +18,7 @@ create-react-app과 ant design, firebase를 사용해 구현한 요기옥션 어
 - react-router v6 : 기존 익숙하던 방식과는 달랐지만, nested routing이 직관적이라고 느껴졌다.
 
 ## 배포
-[https://admin-yogi-auction.vercel.app](https://admin-yogi-auction.vercel.app)
+[https://admin-yogi-auction.shop](https://admin.yogi-auction.shop)
 vercel을 사용합니다. main 브랜치에 push하면 배포 됩니다.
 
 ## 로컬 서버
