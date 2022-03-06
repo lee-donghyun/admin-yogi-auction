@@ -5,17 +5,14 @@ import {
   getDoc,
   collection,
   query,
-  startAfter,
-  limit,
   getDocs,
-  DocumentData,
-  QueryDocumentSnapshot,
   DocumentReference,
   CollectionReference,
   where,
   orderBy,
   setDoc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 const app = initializeApp({
@@ -96,6 +93,26 @@ export const acceptRegisterItem = async (
     doc(db, "requests", item.id) as DocumentReference<Item.Requested>,
     {
       state: "ACCEPTED",
+    }
+  );
+};
+
+export const deleteItem = async (id: string) => {
+  await deleteDoc(doc(db, "items", id));
+};
+
+export const rejectRegisterItem = async (
+  item: Item.Requested,
+  rejectReason: string
+) => {
+  if (item.state === "ACCEPTED") {
+    await deleteItem(item.id);
+  }
+  await updateDoc<Item.Requested>(
+    doc(db, "requests", item.id) as DocumentReference<Item.Requested>,
+    {
+      state: "REJECTED",
+      rejectReason,
     }
   );
 };

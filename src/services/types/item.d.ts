@@ -37,6 +37,7 @@ namespace Item {
 
   type Requested = Item.Item & {
     state: Item.RequestState;
+    rejectReason?: string;
   };
   type RequestState = "REJECTED" | "ACCEPTED" | "REQUESTED";
 }

@@ -11,6 +11,7 @@ import {
   message,
   Space,
   Tag,
+  Popover,
 } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import { FC, useEffect, useState } from "react";
@@ -18,6 +19,7 @@ import useSWR, { KeyedMutator } from "swr";
 import {
   acceptRegisterItem,
   getRequestedItems,
+  rejectRegisterItem,
 } from "../../services/api/firebase";
 
 const initialValues = {
@@ -27,6 +29,7 @@ const initialValues = {
 
 enum ModalState {
   ACCEPT,
+  REJECT,
   NONE,
 }
 
@@ -133,35 +136,10 @@ const ItemTable: FC<{
   mutate: KeyedMutator<Item.Requested[]>;
 }> = ({ error, data, mutate }) => {
   const [modal, setModal] = useState<ModalState>(ModalState.NONE);
-  const [form] = Form.useForm();
   const [target, setTarget] = useState<Item.Requested | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const onCancel = () => {
+  const closeModal = () => {
     setModal(ModalState.NONE);
-    form.resetFields();
     setTarget(null);
-  };
-  const onFinish = async (form: any) => {
-    if (form.options.length == 0) {
-      message.warn("하나 이상의 옵션 명을 입력해주세요.");
-      return;
-    }
-    try {
-      setIsLoading(true);
-      if (target) {
-        await acceptRegisterItem(target, form.options);
-        await mutate();
-        onCancel();
-        message.success("상품을 승인했습니다.");
-      } else {
-        throw new Error("");
-      }
-    } catch (error) {
-      message.error("상품 승인에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const columns: ColumnsType<Item.Requested> = [
@@ -174,6 +152,18 @@ const ItemTable: FC<{
       title: "코드",
       dataIndex: "id",
       key: "id",
+      render: (id) => (
+        <Button
+          type="text"
+          onClick={() => {
+            navigator.clipboard
+              .writeText(id)
+              .then(() => message.info("코드가 복사되었습니다."));
+          }}
+        >
+          {id}
+        </Button>
+      ),
     },
     {
       title: "사진",
@@ -212,7 +202,17 @@ const ItemTable: FC<{
               승인
             </Button>
           )}
-          {target.state !== "REJECTED" && <Button danger>반려</Button>}
+          {target.state !== "REJECTED" && (
+            <Button
+              danger
+              onClick={() => {
+                setModal(ModalState.REJECT);
+                setTarget(target);
+              }}
+            >
+              반려
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -220,10 +220,14 @@ const ItemTable: FC<{
       title: "상태",
       key: "state",
       dataIndex: "state",
-      render: (state) => (
+      render: (state, { rejectReason }) => (
         <>
           {state == "ACCEPTED" && <Tag color="success">승인</Tag>}
-          {state == "REJECTED" && <Tag color="error">반려</Tag>}
+          {state == "REJECTED" && (
+            <Popover content={rejectReason}>
+              <Tag color="error">반려</Tag>
+            </Popover>
+          )}
           {state == "REQUESTED" && <Tag>승인 대기</Tag>}
         </>
       ),
@@ -240,48 +244,158 @@ const ItemTable: FC<{
         columns={columns}
         loading={!data && !error}
       />
-      <Modal
-        title="상품 승인"
+      <AcceptModal
         visible={modal === ModalState.ACCEPT}
-        onOk={form.submit}
-        confirmLoading={isLoading}
-        onCancel={onCancel}
-        cancelText="닫기"
-        okText="승인"
-      >
-        <p>해당 상품의 모든 옵션을 입력하세요.</p>
-        <Form
-          onFinish={onFinish}
-          name="item_option"
-          form={form}
-          initialValues={{ options: [""] }}
-        >
-          <Form.List name="options">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map((field) => (
-                  <Form.Item
-                    {...field}
-                    key={field.key}
-                    rules={[{ required: true, message: "필수 값입니다." }]}
-                  >
-                    <Space>
-                      <Input placeholder="옵션 명" />
-                      {fields.length > 1 && (
-                        <Button onClick={() => remove(field.name)} danger>
-                          제거
-                        </Button>
-                      )}
-                    </Space>
-                  </Form.Item>
-                ))}
-                <Button onClick={() => add()}>추가</Button>
-              </>
-            )}
-          </Form.List>
-        </Form>
-      </Modal>
+        closeModal={closeModal}
+        target={target}
+        mutate={mutate}
+      />
+      <RejectModal
+        visible={modal === ModalState.REJECT}
+        closeModal={closeModal}
+        target={target}
+        mutate={mutate}
+      />
     </>
+  );
+};
+
+const AcceptModal: FC<{
+  visible: boolean;
+  closeModal: () => void;
+  target: Item.Requested | null;
+  mutate: KeyedMutator<Item.Requested[]>;
+}> = ({ visible, closeModal, target, mutate }) => {
+  const [form] = Form.useForm();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const onCancel = () => {
+    closeModal();
+    form.resetFields();
+  };
+  const onFinish = async (form: any) => {
+    if (form.options.length == 0) {
+      message.warn("하나 이상의 옵션 명을 입력해주세요.");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      if (target) {
+        await acceptRegisterItem(target, form.options);
+        await mutate();
+        onCancel();
+        message.success("상품을 승인했습니다.");
+      } else {
+        throw new Error("");
+      }
+    } catch (error) {
+      message.error("상품 승인에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  return (
+    <Modal
+      title="상품 승인"
+      visible={visible}
+      onOk={form.submit}
+      confirmLoading={isLoading}
+      onCancel={onCancel}
+      cancelText="닫기"
+      okText="승인"
+    >
+      <p>해당 상품의 모든 옵션을 입력하세요.</p>
+      <Form
+        onFinish={onFinish}
+        name="item_option"
+        form={form}
+        initialValues={{ options: [""] }}
+      >
+        <Form.List name="options">
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map((field) => (
+                <Form.Item
+                  {...field}
+                  key={field.key}
+                  rules={[{ required: true, message: "필수 값입니다." }]}
+                >
+                  <Space>
+                    <Input placeholder="옵션 명" />
+                    {fields.length > 1 && (
+                      <Button onClick={() => remove(field.name)} danger>
+                        제거
+                      </Button>
+                    )}
+                  </Space>
+                </Form.Item>
+              ))}
+              <Button onClick={() => add()}>추가</Button>
+            </>
+          )}
+        </Form.List>
+      </Form>
+    </Modal>
+  );
+};
+
+const RejectModal: FC<{
+  visible: boolean;
+  closeModal: () => void;
+  target: Item.Requested | null;
+  mutate: KeyedMutator<Item.Requested[]>;
+}> = ({ visible, closeModal, target, mutate }) => {
+  const [form] = Form.useForm();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const onCancel = () => {
+    closeModal();
+    form.resetFields();
+  };
+  const onFinish = async (form: any) => {
+    try {
+      setIsLoading(true);
+      if (target) {
+        await rejectRegisterItem(target, form.reason);
+        await mutate();
+        onCancel();
+        message.success("상품을 반려했습니다.");
+      } else {
+        throw new Error("");
+      }
+    } catch (error) {
+      message.error("상품 반려에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  return (
+    <Modal
+      title="상품 반려"
+      visible={visible}
+      onOk={form.submit}
+      confirmLoading={isLoading}
+      onCancel={onCancel}
+      cancelText="닫기"
+      okText="반려"
+    >
+      <p>반려 사유를 입력해주세요.</p>
+      <Form onFinish={onFinish} name="item_reject_reason" form={form}>
+        <Form.Item
+          name="reason"
+          rules={[
+            { required: true, message: "필수 값입니다." },
+            { min: 10, message: "10글자 이상 입력해주세요." },
+            { max: 100, message: "100글자 미만으로 입력해주세요." },
+          ]}
+        >
+          <Input.TextArea
+            rows={6}
+            placeholder="고객에게 보여지는 내용입니다. 신중히 입력해주세요."
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 
