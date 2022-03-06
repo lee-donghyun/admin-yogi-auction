@@ -38,10 +38,5 @@ namespace Item {
   type Requested = Item.Item & {
     state: Item.RequestState;
   };
-
-  enum RequestState {
-    "REJECTED" = "REJECTED",
-    "ACCEPTED" = "ACCEPTED",
-    "REQUESTED" = "REQUESTED",
-  }
+  type RequestState = "REJECTED" | "ACCEPTED" | "REQUESTED";
 }

@@ -14,8 +14,11 @@ import {
 } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import { FC, useEffect, useState } from "react";
-import useSWR from "swr";
-import { getRequestedItems } from "../../services/api/firebase";
+import useSWR, { KeyedMutator } from "swr";
+import {
+  acceptRegisterItem,
+  getRequestedItems,
+} from "../../services/api/firebase";
 
 const initialValues = {
   search: { type: "name" },
@@ -29,7 +32,7 @@ enum ModalState {
 
 const Register: FC = () => {
   const [payload, setPayload] = useState(initialValues);
-  const { data, error } = useSWR(payload, getRequestedItems);
+  const { data, error, mutate } = useSWR(payload, getRequestedItems);
 
   useEffect(() => {
     if (error) {
@@ -47,7 +50,7 @@ const Register: FC = () => {
       </Row>
       <Row style={{ marginTop: 24 }}>
         <Col span={24}>
-          <ItemTable data={data} error={error} />
+          <ItemTable data={data} error={error} mutate={mutate} />
         </Col>
       </Row>
     </>
@@ -90,12 +93,21 @@ const SearchForm: FC<{
           </Form.Item>
         </Col>
       </Row>
-      <Row>
+      <Row gutter={24}>
         <Col span={8}>
           <Form.Item label="정렬" name="sort">
             <Select>
               <Select.Option value="releasedAt">오래된 순</Select.Option>
               <Select.Option value="releasedAt,desc">최신 순</Select.Option>
+            </Select>
+          </Form.Item>
+        </Col>
+        <Col span={8}>
+          <Form.Item label="상태 필터" name="state">
+            <Select allowClear placeholder="전체">
+              <Select.Option value="REQUESTED">승인 대기</Select.Option>
+              <Select.Option value="ACCEPTED">승인</Select.Option>
+              <Select.Option value="REJECTED">반려</Select.Option>
             </Select>
           </Form.Item>
         </Col>
@@ -115,12 +127,43 @@ const SearchForm: FC<{
   );
 };
 
-const ItemTable: FC<{ data?: Item.Requested[]; error?: any }> = ({
-  error,
-  data,
-}) => {
+const ItemTable: FC<{
+  data?: Item.Requested[];
+  error?: any;
+  mutate: KeyedMutator<Item.Requested[]>;
+}> = ({ error, data, mutate }) => {
   const [modal, setModal] = useState<ModalState>(ModalState.NONE);
   const [form] = Form.useForm();
+  const [target, setTarget] = useState<Item.Requested | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const onCancel = () => {
+    setModal(ModalState.NONE);
+    form.resetFields();
+    setTarget(null);
+  };
+  const onFinish = async (form: any) => {
+    if (form.options.length == 0) {
+      message.warn("하나 이상의 옵션 명을 입력해주세요.");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      if (target) {
+        await acceptRegisterItem(target, form.options);
+        await mutate();
+        onCancel();
+        message.success("상품을 승인했습니다.");
+      } else {
+        throw new Error("");
+      }
+    } catch (error) {
+      message.error("상품 승인에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const columns: ColumnsType<Item.Requested> = [
     {
       title: "이름",
@@ -157,12 +200,19 @@ const ItemTable: FC<{ data?: Item.Requested[]; error?: any }> = ({
     {
       title: "등록",
       key: "register",
-      render: (_, { state }) => (
+      render: (_, target) => (
         <Space direction="vertical">
-          {state !== "ACCEPTED" && (
-            <Button onClick={() => setModal(ModalState.ACCEPT)}>승인</Button>
+          {target.state !== "ACCEPTED" && (
+            <Button
+              onClick={() => {
+                setModal(ModalState.ACCEPT);
+                setTarget(target);
+              }}
+            >
+              승인
+            </Button>
           )}
-          {state !== "REJECTED" && <Button danger>반려</Button>}
+          {target.state !== "REJECTED" && <Button danger>반려</Button>}
         </Space>
       ),
     },
@@ -194,17 +244,14 @@ const ItemTable: FC<{ data?: Item.Requested[]; error?: any }> = ({
         title="상품 승인"
         visible={modal === ModalState.ACCEPT}
         onOk={form.submit}
-        confirmLoading={false}
-        onCancel={() => {
-          setModal(ModalState.NONE);
-          form.resetFields();
-        }}
+        confirmLoading={isLoading}
+        onCancel={onCancel}
         cancelText="닫기"
         okText="승인"
       >
         <p>해당 상품의 모든 옵션을 입력하세요.</p>
         <Form
-          onFinish={(...args) => console.log(args)}
+          onFinish={onFinish}
           name="item_option"
           form={form}
           initialValues={{ options: [""] }}

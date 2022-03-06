@@ -14,6 +14,8 @@ import {
   CollectionReference,
   where,
   orderBy,
+  setDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 const app = initializeApp({
@@ -54,6 +56,7 @@ export const getItem = async (id: string): Promise<{ data: Item.Item }> => {
 export const getRequestedItems = async (key: {
   search?: Partial<{ type: "id" | "name"; query: string }>;
   sort: "releasedAt" | "releasedAt,desc";
+  state?: Item.RequestState;
 }) => {
   const itemsRef = collection(
     db,
@@ -67,8 +70,32 @@ export const getRequestedItems = async (key: {
   queries.push(
     orderBy(...(key.sort.split(",") as [string] | [string | "desc"]))
   );
+  if (key.state) {
+    queries.push(where("state", "==", key.state));
+  }
   const q = query<Item.Requested>(itemsRef, ...queries);
 
   const itemsSnap = await getDocs(q);
   return itemsSnap.docs.map((doc) => doc.data());
+};
+
+export const acceptRegisterItem = async (
+  item: Item.Requested,
+  options: string[]
+) => {
+  const payload: Item.Item = {
+    ...item,
+    asks: options.map((option) => ({ name: option, options: [] })),
+    bids: options.map((option) => ({ name: option, options: [] })),
+  };
+  await setDoc<Item.Item>(
+    doc(db, "items", item.id) as DocumentReference<Item.Item>,
+    payload
+  );
+  await updateDoc<Item.Requested>(
+    doc(db, "requests", item.id) as DocumentReference<Item.Requested>,
+    {
+      state: "ACCEPTED",
+    }
+  );
 };
