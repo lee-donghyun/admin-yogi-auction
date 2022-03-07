@@ -23,5 +23,5 @@ vercel을 사용합니다. main 브랜치에 push하면 배포 됩니다.
 
 ## 로컬 서버
 ```
-npm i && npm run dev
+npm i && npm run start
 ```
